@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "github.com/paxos/temporal-poc";
+
+message Trade {
+    string id = 1;
+    int32 quantity = 2;
+    int32 amount = 3;
+    int32 total = 4;
+    string buyer = 5;
+    string seller = 6;
+  }
+  
+  message TradeStatus {
+    string referenceId = 1;
+    enum Status {
+      ACCEPTED = 0;
+      REJECTED = 1;
+    }
+    Status status = 2;
+  }

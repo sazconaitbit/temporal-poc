@@ -1,0 +1,44 @@
+version: '3.7'
+
+services:
+  temporal:
+    image: temporalio/auto-setup:${TEMPORAL_VERSION:-1.13.0}
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgresql
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgres
+      - POSTGRES_PORT=5432
+      - AUTO_SETUP=true
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-13}
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=temporal
+      - POSTGRES_PASSWORD=temporal
+      - POSTGRES_DB=temporal
+
+  worker:
+    build: ./worker
+    environment:
+      - TEMPORAL_GRPC_ENDPOINT=temporal:7233
+    depends_on:
+      - temporal
+      - postgres
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    environment:
+      - TEMPORAL_WEB_PORT=8080
+      - TEMPORAL_GRPC_ENDPOINT=temporal:7233
+    depends_on:
+      - temporal
+      - postgres
