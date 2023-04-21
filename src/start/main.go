@@ -23,12 +23,6 @@ func main() {
 		BackgroundActivityContext:          context.Background(),
 	}
 
-	// Configure Temporal client
-	//client, err := client.NewClient(client.Options{})
-	//if err != nil {
-	//	log.Fatalln("Unable to create client", err)
-	//}
-
 	// Create the client object just once per process
 	c, err := client.Dial(client.Options{})
 	if err != nil {
@@ -42,7 +36,7 @@ func main() {
 
 	// Register TradeCaptureWorkflow with worker
 	worker.RegisterWorkflow(app.TradeCaptureWorkflow)
-	//worker.RegisterActivity(ProcessTradeActivity)
+	worker.RegisterActivity(ProcessTradeActivity)
 
 	// Start Temporal worker
 	err = worker.Start()

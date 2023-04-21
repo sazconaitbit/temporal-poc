@@ -8,13 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// interface to handle currect activity
-type ProcessTradeActivity struct {
-	transport Transport
-}
-
-// implementation to hander ProcessTradeActivity
-func (a *ProcessTradeActivity) Execute(ctx context.Context, input *protos.Trade) (*protos.TradeStatus, error) {
+func ValidateTrade(ctx context.Context, transport Transport, input *protos.Trade) (*protos.TradeStatus, error) {
 	// Validaciones
 	if input.Quantity <= 0 || input.Amount <= 0 {
 		return nil, errors.New("quantity and amount must be greater than 0")
@@ -34,7 +28,7 @@ func (a *ProcessTradeActivity) Execute(ctx context.Context, input *protos.Trade)
 		return nil, err
 	}
 
-	err = a.transport.Send(ctx, &MessagePayload{
+	err = transport.Send(ctx, &MessagePayload{
 		Key:   input.Id,
 		Value: tradeStatusBytes,
 	})

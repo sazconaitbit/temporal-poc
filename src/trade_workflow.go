@@ -33,15 +33,11 @@ func TradeCaptureWorkflow(ctx workflow.Context, trade *protos.Trade, transport T
 	// apply the options
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
-	processTradeActivity := &ProcessTradeActivity{
-		transport: transport,
-	}
-
 	// output of this trade workflow, need to be var because is modified by the activity result
 	var tradeStatus protos.TradeStatus
 
 	// execute the activity
-	err := workflow.ExecuteActivity(ctx, processTradeActivity, trade).Get(ctx, &tradeStatus)
+	err := workflow.ExecuteActivity(ctx, ValidateTrade, transport, trade).Get(ctx, &tradeStatus)
 	if err != nil {
 		return protos.TradeStatus{}, err
 	}
