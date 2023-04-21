@@ -7,6 +7,9 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+/***
+Kafka transport layer implementation
+***/
 type KafkaTransport struct {
 	reader *kafka.Reader
 	writer *kafka.Writer

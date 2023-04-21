@@ -6,6 +6,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+/*****
+The idea of this is to have a transport layer interface that can have many switcheable implementations, kafka, grpc, rest, etc.
+*****/
+
 // payload input used by the transport layers
 type MessagePayload struct {
 	Key   string
@@ -28,6 +32,7 @@ type Transport interface {
 	MessageSender
 }
 
+// serializer and deserializer
 func EncodeProtoMessage(message proto.Message) ([]byte, error) {
 	return proto.Marshal(message)
 }
