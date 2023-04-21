@@ -13,7 +13,7 @@ const (
 	activityName = "ProcessTradeActivity"
 )
 
-func TradeCaptureWorkflow(ctx workflow.Context, trade *protos.Trade, transport Transport) (protos.TradeStatus, error) {
+func TradeCaptureWorkflow(ctx workflow.Context, trade *protos.Trade, transport Transport) (*protos.TradeStatus, error) {
 
 	// Configure retry policy for the activity and options
 	activityOptions := workflow.ActivityOptions{
@@ -39,8 +39,8 @@ func TradeCaptureWorkflow(ctx workflow.Context, trade *protos.Trade, transport T
 	// execute the activity
 	err := workflow.ExecuteActivity(ctx, ValidateTrade, transport, trade).Get(ctx, &tradeStatus)
 	if err != nil {
-		return protos.TradeStatus{}, err
+		return nil, err
 	}
 
-	return tradeStatus, nil
+	return &tradeStatus, nil
 }

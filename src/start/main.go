@@ -36,7 +36,7 @@ func main() {
 
 	// Register TradeCaptureWorkflow with worker
 	worker.RegisterWorkflow(app.TradeCaptureWorkflow)
-	worker.RegisterActivity(ProcessTradeActivity)
+	worker.RegisterActivity(app.ValidateTrade)
 
 	// Start Temporal worker
 	err = worker.Start()
@@ -57,6 +57,44 @@ func main() {
 	fmt.Println("Press Enter to exit...")
 	var input string
 	fmt.Scanln(&input)
+}
+
+func processKafkaMessages(ctx context.Context, transport app.Transport, c client.Client) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			payload, err := transport.Receive(ctx)
+			if err != nil {
+				log.Printf("Error receiving message: %v", err)
+				continue
+			}
+
+			var trade protos.Trade
+			err = app.DecodeProtoMessage(payload.Value, &trade)
+			if err != nil {
+				log.Printf("Error decoding message: %v", err)
+				continue
+			}
+
+			// Call the TradeCaptureWorkflow
+			workflowOptions := client.StartWorkflowOptions{
+				ID:                       trade.Id, // for idempotency control and uniqueness
+				TaskQueue:                app.TaskQueue,
+				WorkflowExecutionTimeout: 10 * time.Minute,
+				WorkflowTaskTimeout:      time.Minute,
+				//WorkflowIDReusePolicy:          client.WorkflowIDReusePolicyAllowDuplicate,
+				//DisableWorkflowExecutionCancel: true,
+			}
+			we, err := c.ExecuteWorkflow(ctx, workflowOptions, app.TradeCaptureWorkflow, &trade, transport)
+			if err != nil {
+				log.Printf("Error starting workflow: %v", err)
+			} else {
+				log.Printf("Started workflow for trade with ID: %s, runID: %s", trade.Id, we.GetRunID())
+			}
+		}
+	}
 }
 
 // for test proposes
@@ -88,43 +126,5 @@ func sendTestTrades(transport app.Transport, count int) {
 		}
 
 		fmt.Printf("Sent trade with ID %s\n", trade.Id)
-	}
-}
-
-func processKafkaMessages(ctx context.Context, transport app.Transport, c client.Client) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			payload, err := transport.Receive(ctx)
-			if err != nil {
-				log.Printf("Error receiving message: %v", err)
-				continue
-			}
-
-			var trade protos.Trade
-			err = app.DecodeProtoMessage(payload.Value, &trade)
-			if err != nil {
-				log.Printf("Error decoding message: %v", err)
-				continue
-			}
-
-			// Call the TradeCaptureWorkflow
-			workflowOptions := client.StartWorkflowOptions{
-				ID:                       trade.Id,
-				TaskQueue:                app.TaskQueue,
-				WorkflowExecutionTimeout: 10 * time.Minute,
-				WorkflowTaskTimeout:      time.Minute,
-				//WorkflowIDReusePolicy:          client.WorkflowIDReusePolicyAllowDuplicate,
-				//DisableWorkflowExecutionCancel: true,
-			}
-			we, err := c.ExecuteWorkflow(ctx, workflowOptions, app.TradeCaptureWorkflow, trade, transport)
-			if err != nil {
-				log.Printf("Error starting workflow: %v", err)
-			} else {
-				log.Printf("Started workflow for trade with ID: %s, runID: %s", trade.Id, we.GetRunID())
-			}
-		}
 	}
 }
